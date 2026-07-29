@@ -1,7 +1,7 @@
 import os
 import subprocess
-import sys
 import random
+import sys
 import streamlit as st
 
 try:
@@ -35,7 +35,6 @@ def generate_clip_assets_cloud_safe(video_file, start_ts, duration, video_width,
     if os.path.exists(temp_chunk): os.remove(temp_chunk)
     if os.path.exists(output_vertical): os.remove(output_vertical)
     
-    # Local slicing inside container (100% safe from network locks)
     ffmpeg_chunk_cmd = f'ffmpeg -y -ss {start_ts} -t {duration} -i "{video_file}" -c copy "{temp_chunk}"'
     subprocess.run(ffmpeg_chunk_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
@@ -45,7 +44,7 @@ def generate_clip_assets_cloud_safe(video_file, start_ts, duration, video_width,
     out_w_v = int(video_height * (9/16))
     crop_x_v = max(0, min(face_x - int(out_w_v / 2), video_width - out_w_v))
     
-    # Ultra-compressed rendering specifications for public clouds
+    # Fast rendering presets mapping for stable outputs
     subprocess.run(f'ffmpeg -y -i "{temp_chunk}" -vf "crop={out_w_v}:in_h:{crop_x_v}:0,scale=360:640" -c:v libx264 -preset ultrafast -crf 28 -c:a aac "{output_vertical}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     os.remove(temp_chunk)
     
@@ -54,45 +53,37 @@ def generate_clip_assets_cloud_safe(video_file, start_ts, duration, video_width,
 st.set_page_config(page_title="ClipForge AI 24/7 Live", page_icon="🔥", layout="centered")
 
 st.title("🔥 ClipForge AI - Professional Dashboard")
-st.write("Duniya mein kahin se bhi 24/7 mobile aur laptop par access karein.")
+st.write("Upload any video to instantly split it into vertical shorts. 100% Free & Online!")
 
-youtube_url = st.text_input("🔗 YouTube Video Link Paste Karein:", placeholder="https://youtube.com...")
+# 🔥 FIX: Disabling link entry to completely dodge YouTube restrictions
+uploaded_file = st.file_uploader("📤 Apni MP4 Video File Upload Karein:", type=["mp4", "mov"])
 count_input = st.number_input("Maximum kitni clips chahiye?", min_value=1, max_value=3, value=2)
 clip_duration = st.number_input("Har clip kitny seconds ki ho?", min_value=15, max_value=45, value=30)
 
 if st.button("🚀 Process & Generate Cloud Downloads"):
-    if not youtube_url:
-        st.error("Pehle link paste karein!")
+    if not uploaded_file:
+        st.error("Pehle apni video file upload karein!")
     else:
-        with st.spinner("AI Engine is executing background containers... Please wait..."):
+        with st.spinner("AI Engine is cutting uploaded file inside cloud runtime slots..."):
             try:
-                # Cleaning extra trace links garbage tokens
-                clean_url = youtube_url.split("?")[0].split("&")[0].strip()
-                video_file = "container_source.mp4"
-                if os.path.exists(video_file): os.remove(video_file)
-                
-                st.info("📥 Connecting via alternative cloud protocol buffers...")
-                
-                # 🔥 THE GRAND BYPASS INJECTION: Disabling geographic verifications to bypass 400 bad requests
-                download_cmd = [
-                    sys.executable, "-m", "yt_dlp", 
-                    "-f", "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360]/best", 
-                    "--no-check-certificates", "--prefer-free-formats",
-                    "--extractor-args", "youtube:player_client=android", # Emulate mobile client to completely dodge data center blocks
-                    "-o", video_file, clean_url
-                ]
-                subprocess.run(download_cmd, check=True)
+                # Save uploaded file structure onto container virtual space safely
+                video_file = "uploaded_source.mp4"
+                with open(video_file, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
 
                 duration_cmd = f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
                 total_seconds = float(subprocess.check_output(duration_cmd, shell=True).decode().strip())
                 
-                video_width = 640
-                video_height = 360
+                # Fetch original spatial configurations via dynamic query parameters
+                w_cmd = f'ffprobe -v error -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
+                video_width = int(subprocess.check_output(w_cmd, shell=True).decode().strip().split()[0])
+                h_cmd = f'ffprobe -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
+                video_height = int(subprocess.check_output(h_cmd, shell=True).decode().strip().split()[0])
                 
-                st.info("⚡ Slicing dynamic intervals inside safe parameters...")
-                roman_phrases = ["ghabrana nahi hai"]
+                st.info("⚡ File loaded safely! Auto-framing sequences triggered...")
+                roman_phrases = ["sab se pehle aap ne ghabrana nahi hai"]
                 
-                seq_time = 15.0
+                seq_time = 5.0
                 for idx in range(count_input):
                     if (seq_time + clip_duration) > total_seconds: break
                     f_name = f"Cloud_Short_{idx+1}"
