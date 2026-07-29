@@ -1,4 +1,3 @@
-streamlit
+gradio
 opencv-python-headless
 numpy
-yt-dlp
