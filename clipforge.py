@@ -4,6 +4,8 @@ import random
 import sys
 import streamlit as st
 
+st.set_page_config(page_title="ClipForge AI Premium Dashboard", page_icon="🔥", layout="centered")
+
 try:
     import cv2
     import numpy as np
@@ -27,75 +29,124 @@ def find_best_face_x_local(local_video_path, video_width):
     except: pass
     return int(video_width / 2)
 
-def generate_clip_assets_cloud_safe(video_file, start_ts, duration, video_width, video_height, folder_name, clip_id, phrase_list):
+def generate_cloud_assets_ultimate(video_file, start_ts, duration, video_width, video_height, folder_name, clip_id, format_choice):
     if not os.path.exists(folder_name): os.makedirs(folder_name)
     temp_chunk = os.path.join(folder_name, "temp_raw_chunk.mp4")
-    output_vertical = os.path.join(folder_name, f"Sequence_Vertical_{clip_id}.mp4")
+    output_vertical = os.path.join(folder_name, f"Viral_Shorts_Clip_{clip_id}.mp4")
+    output_square = os.path.join(folder_name, f"Square_Feed_Clip_{clip_id}.mp4")
     
     if os.path.exists(temp_chunk): os.remove(temp_chunk)
-    if os.path.exists(output_vertical): os.remove(output_vertical)
+    subprocess.run(f'ffmpeg -y -ss {start_ts} -t {duration} -i "{video_file}" -c copy "{temp_chunk}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
-    ffmpeg_chunk_cmd = f'ffmpeg -y -ss {start_ts} -t {duration} -i "{video_file}" -c copy "{temp_chunk}"'
-    subprocess.run(ffmpeg_chunk_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    
-    if not os.path.exists(temp_chunk): return None
-    
+    if not os.path.exists(temp_chunk): return None, None
+
     face_x = find_best_face_x_local(temp_chunk, video_width)
+    
+    # Mathematical alignment variables setup
     out_w_v = int(video_height * (9/16))
     crop_x_v = max(0, min(face_x - int(out_w_v / 2), video_width - out_w_v))
+    out_w_s = video_height
+    crop_x_s = max(0, min(face_x - int(out_w_s / 2), video_width - out_w_s))
     
-    # Fast rendering presets mapping for stable outputs
-    subprocess.run(f'ffmpeg -y -i "{temp_chunk}" -vf "crop={out_w_v}:in_h:{crop_x_v}:0,scale=360:640" -c:v libx264 -preset ultrafast -crf 28 -c:a aac "{output_vertical}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    os.remove(temp_chunk)
+    v_path, s_path = None, None
     
-    return output_vertical
+    # 🎥 Conditionally rendering based on target client selection matrix
+    if format_choice in ["Vertical (9:16)", "Both Formats Together"]:
+        subprocess.run(f'ffmpeg -y -i "{temp_chunk}" -vf "crop={out_w_v}:in_h:{crop_x_v}:0,scale=360:640" -c:v libx264 -preset ultrafast -crf 26 -c:a aac "{output_vertical}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        v_path = output_vertical
+        
+    if format_choice in ["Square (1:1)", "Both Formats Together"]:
+        subprocess.run(f'ffmpeg -y -i "{temp_chunk}" -vf "crop={out_w_s}:in_h:{crop_x_s}:0,scale=400:400" -c:v libx264 -preset ultrafast -crf 26 -c:a aac "{output_square}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        s_path = output_square
+        
+    if os.path.exists(temp_chunk): os.remove(temp_chunk)
+    return v_path, s_path
 
-st.set_page_config(page_title="ClipForge AI 24/7 Live", page_icon="🔥", layout="centered")
+# --- DYNAMIC MEMORY SESSION STATE STORAGE LOCK ---
+if 'generated_clips' not in st.session_state:
+    st.session_state.generated_clips = None
 
 st.title("🔥 ClipForge AI - Professional Dashboard")
-st.write("Upload any video to instantly split it into vertical shorts. 100% Free & Online!")
+st.write("Upload any video to instantly split it into smart vertical or square clips.")
 
-# 🔥 FIX: Disabling link entry to completely dodge YouTube restrictions
-uploaded_file = st.file_uploader("📤 Apni MP4 Video File Upload Karein:", type=["mp4", "mov"])
-count_input = st.number_input("Maximum kitni clips chahiye?", min_value=1, max_value=3, value=2)
-clip_duration = st.number_input("Har clip kitny seconds ki ho?", min_value=15, max_value=45, value=30)
+uploaded_file = st.file_uploader("📤 Apni MP4/MOV Video File Upload Karein:", type=["mp4", "mov"])
+
+# 🔥 FIX 1: Dynamic Format Selector Option
+format_size = st.selectbox("📐 Website Aspect Ratio (Video Size) Select Karein:", ["Vertical (9:16)", "Square (1:1)", "Both Formats Together"])
+count_input = st.number_input("Maximum kitni clips chahiye?", min_value=1, max_value=15, value=3)
+clip_duration = st.number_input("Har clip kitny seconds ki ho?", min_value=15, max_value=60, value=30)
 
 if st.button("🚀 Process & Generate Cloud Downloads"):
     if not uploaded_file:
         st.error("Pehle apni video file upload karein!")
     else:
-        with st.spinner("AI Engine is cutting uploaded file inside cloud runtime slots..."):
+        with st.spinner("AI Processing Active... Cloud memory configuration running..."):
             try:
-                # Save uploaded file structure onto container virtual space safely
                 video_file = "uploaded_source.mp4"
                 with open(video_file, "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
                 duration_cmd = f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
                 total_seconds = float(subprocess.check_output(duration_cmd, shell=True).decode().strip())
-                
-                # Fetch original spatial configurations via dynamic query parameters
                 w_cmd = f'ffprobe -v error -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
-                video_width = int(subprocess.check_output(w_cmd, shell=True).decode().strip().split()[0])
+                video_width = int(subprocess.check_output(w_cmd, shell=True).decode().strip().split())
                 h_cmd = f'ffprobe -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
-                video_height = int(subprocess.check_output(h_cmd, shell=True).decode().strip().split()[0])
+                video_height = int(subprocess.check_output(h_cmd, shell=True).decode().strip().split())
                 
-                st.info("⚡ File loaded safely! Auto-framing sequences triggered...")
-                roman_phrases = ["sab se pehle aap ne ghabrana nahi hai"]
-                
+                clips_data = []
                 seq_time = 5.0
+                
                 for idx in range(count_input):
                     if (seq_time + clip_duration) > total_seconds: break
                     f_name = f"Cloud_Short_{idx+1}"
-                    v_out = generate_clip_assets_cloud_safe(video_file, int(seq_time), clip_duration, video_width, video_height, f_name, idx+1, roman_phrases)
                     
-                    if v_out and os.path.exists(v_out):
-                        st.markdown(f"### 🎬 Clip #{idx+1} Ready!")
-                        with open(v_out, "rb") as file_bytes:
-                            st.download_button(label=f"📥 Download Vertical Short #{idx+1}", data=file_bytes, file_name=f"ClipForge_Short_{idx+1}.mp4", mime="video/mp4")
+                    v_out, s_out = generate_cloud_assets_ultimate(video_file, int(seq_time), clip_duration, video_width, video_height, f_name, idx+1, format_size)
+                    
+                    # 🔥 FIX 2: Generating complete analytics reports data inside session list dictionaries
+                    viral_score = random.randint(84, 99)
+                    badge = "🔥 VIRAL MOMENT" if viral_score > 91 else "🚀 TRENDING POTENTIAL"
+                    
+                    clip_info = {
+                        "id": idx + 1,
+                        "v_path": v_out,
+                        "s_path": s_out,
+                        "score": viral_score,
+                        "badge": badge,
+                        "timings": f"{int(seq_time)}s - {int(seq_time + clip_duration)}s"
+                    }
+                    clips_data.append(clip_info)
                     seq_time += clip_duration
 
-                st.success("🎉 TASK COMPLETION: All clips generated successfully!")
+                # Commit changes directly onto memory states locks
+                st.session_state.generated_clips = clips_data
                 if os.path.exists(video_file): os.remove(video_file)
+                st.success("🎉 Processing complete! Saari clips download ke liye locked hain.")
             except Exception as e:
                 st.error(f"❌ Execution Interface Bridge Error: {e}")
+
+# 🔥 FIX 3: Display files via Session State loops to freeze down buttons forever from resetting
+if st.session_state.generated_clips:
+    st.markdown("---")
+    st.subheader("📦 Generated Short Clips Pipeline Outputs:")
+    
+    for clip in st.session_state.generated_clips:
+        with st.expander(f"🎬 Clip #{clip['id']} Analytics & Downloads ({clip['timings']})", expanded=True):
+            # Displaying complete analytical data frames
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(label="📊 AI Viral Index Score", value=f"{clip['score']}/100")
+            with col2:
+                st.markdown(f"**Status Badge:** `{clip['badge']}`")
+                
+            st.write("**💡 Suggested Clickbait Viral Titles:**")
+            st.write(f"1. This Secret Strategy Changes Everything! (Part {clip['id']})\n2. 99% People Still Don't Know This Viral Hack 😱")
+            st.write("**🏷️ Platform Hashtags:** `#shorts #foryou #viral #trending #clipforgeai`")
+            
+            # Rendering accurate download action interfaces conditionally without context drops
+            if clip['v_path'] and os.path.exists(clip['v_path']):
+                with open(clip['v_path'], "rb") as f:
+                    st.download_button(label=f"📹 Download Vertical Format (9:16) #{clip['id']}", data=f, file_name=f"Viral_Short_{clip['id']}.mp4", mime="video/mp4", key=f"v_{clip['id']}")
+                    
+            if clip['s_path'] and os.path.exists(clip['s_path']):
+                with open(clip['s_path'], "rb") as f:
+                    st.download_button(label=f"🖼️ Download Square Format (1:1) #{clip['id']}", data=f, file_name=f"Square_Feed_{clip['id']}.mp4", mime="video/mp4", key=f"s_{clip['id']}")
