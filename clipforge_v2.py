@@ -5,7 +5,6 @@ import sys
 import hashlib
 import streamlit as st
 
-# 🔥 MOBILE RE-FRAME FIX 1: 1.5GB Cloud Server Buffer Memory Configuration Explicit Injections
 st.set_page_config(page_title="ClipForge AI Premium V2", page_icon="🔥", layout="centered")
 
 try:
@@ -31,7 +30,7 @@ def find_best_face_x_local(local_video_path, video_width):
     except: pass
     return int(video_width / 2)
 
-def generate_cloud_assets_ultimate_v2(video_file, start_ts, duration, video_width, video_height, folder_name, clip_id, format_choice):
+def generate_cloud_assets_ultimate_v2(video_stream_url, start_ts, duration, video_width, video_height, folder_name, clip_id, format_choice):
     if not os.path.exists(folder_name): os.makedirs(folder_name)
     temp_chunk = os.path.join(folder_name, "temp_raw_chunk.mp4")
     output_vertical = os.path.join(folder_name, f"Viral_Shorts_Clip_{clip_id}.mp4")
@@ -39,9 +38,8 @@ def generate_cloud_assets_ultimate_v2(video_file, start_ts, duration, video_widt
     
     if os.path.exists(temp_chunk): os.remove(temp_chunk)
     
-    # 🔥 MOBILE RE-FRAME FIX 3: "-c copy" ko mita kar heavy timeline encoding audio video force keyframe map lagaya hai
-    # Is se video heavy compression profile vertical render hogi aur har android/iOS gallery mein 100% chalegi!
-    slice_cmd = f'ffmpeg -y -ss {start_ts} -t {duration} -i "{video_file}" -c:v libx264 -preset ultrafast -crf 28 -c:a aac "{temp_chunk}"'
+    # Live Streaming extraction command with fixed keyframe encoding for stable playback in mobile gallery
+    slice_cmd = f'ffmpeg -y -ss {start_ts} -t {duration} -headers "User-Agent: Mozilla/5.0" -i "{video_stream_url}" -c:v libx264 -preset ultrafast -crf 28 -c:a aac "{temp_chunk}"'
     subprocess.run(slice_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
     if not os.path.exists(temp_chunk) or os.path.getsize(temp_chunk) < 5000: return None, None
@@ -63,78 +61,68 @@ def generate_cloud_assets_ultimate_v2(video_file, start_ts, duration, video_widt
     if os.path.exists(temp_chunk): os.remove(temp_chunk)
     return v_path, s_path
 
-if 'generated_clips' not in st.session_state:
-    st.session_state.generated_clips = None
-if 'last_file_hash' not in st.session_state:
-    st.session_state.last_file_hash = None
+if 'generated_clips' not in st.session_state: st.session_state.generated_clips = None
 
-st.title("🔥 ClipForge AI - Mobile Optimized Panel V2")
-st.write("Special Cloud Container update fixed for Android, iPhone and Large Video Transfers.")
+st.title("🔥 ClipForge AI - Mobile Link Master V2")
+st.write("No Downloading. No Uploading. Direct Link Streaming Technology for Long Videos up to 12 Hours!")
 
-uploaded_file = st.file_uploader("📤 Apni MP4/MOV Video File Upload Karein (Allowed: 20MB to 1.5GB):", type=["mp4", "mov"])
-
+# Dynamic Link Entry Box
+youtube_url = st.text_input("🔗 Apni YouTube Video Ka Link Paste Karein (Duniya Ka Koi Bhi Link):", placeholder="https://youtube.com...")
 format_size = st.selectbox("📐 Website Aspect Ratio (Video Size) Select Karein:", ["Vertical (9:16)", "Square (1:1)", "Both Formats Together"])
 count_input = st.number_input("Maximum kitni clips chahiye?", min_value=1, max_value=15, value=3)
 clip_duration = st.number_input("Har clip kitny seconds ki ho?", min_value=15, max_value=60, value=30)
 
 if st.button("🚀 Process & Generate Cloud Downloads"):
-    if not uploaded_file:
-        st.error("Pehle apni video file upload karein!")
+    if not youtube_url:
+        st.error("Pehle YouTube video ka link lagayein!")
     else:
-        file_bytes_size = uploaded_file.size
-        if file_bytes_size < 20000000 or file_bytes_size > 1610612736:
-            st.error("❌ File size limits block! 20MB se 1.5GB ke darmiyan file upload karein.")
-        else:
-            with st.spinner("AI Processing Active... Multi-clip segment mapping layers routing..."):
-                try:
-                    video_file = "uploaded_source.mp4"
+        with st.spinner("AI Streaming Protocol Connected... Extracting live frames data without disk space..."):
+            try:
+                # Direct link filtration sequence
+                clean_url = youtube_url.strip().split("?")[0].split("&")[0]
+                
+                # Fetching direct progressive light stream link using yt-dlp android emulator client directly
+                info_cmd = [
+                    sys.executable, "-m", "yt_dlp", "-g", 
+                    "-f", "best[height<=360][ext=mp4]/best[ext=mp4]/best", 
+                    "--extractor-args", "youtube:player_client=android", clean_url
+                ]
+                video_stream_url = subprocess.check_output(info_cmd, text=True).strip().split('\n')[0]
+                
+                duration_cmd = f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{video_stream_url}"'
+                total_seconds = float(subprocess.check_output(duration_cmd, shell=True).decode().strip())
+                
+                video_width = 640
+                video_height = 360
+                
+                st.info("⚡ Stream Bridge Activated! Extracting sequence clips timeline frames...")
+                clips_data = []
+                seq_time = 15.0
+                
+                for idx in range(int(count_input)):
+                    if (seq_time + clip_duration) > total_seconds: break
+                    f_name = f"Cloud_Short_{idx+1}"
                     
-                    file_buffer = uploaded_file.getbuffer()
-                    current_hash = hashlib.md5(file_buffer).hexdigest()
+                    v_out, s_out = generate_cloud_assets_ultimate_v2(video_stream_url, int(seq_time), clip_duration, video_width, video_height, f_name, idx+1, format_size)
                     
-                    if st.session_state.last_file_hash == current_hash and os.path.exists(video_file):
-                        st.info("✅ CACHING MATRIX: Match found on server storage! Skip active.")
-                    else:
-                        with open(video_file, "wb") as f:
-                            f.write(file_buffer)
-                        st.session_state.last_file_hash = current_hash
+                    viral_score = random.randint(84, 99)
+                    badge = "🔥 VIRAL MOMENT" if viral_score > 91 else "🚀 TRENDING POTENTIAL"
+                    
+                    clip_info = {
+                        "id": idx + 1,
+                        "v_path": v_out,
+                        "s_path": s_out,
+                        "score": viral_score,
+                        "badge": badge,
+                        "timings": f"{int(seq_time)}s - {int(seq_time + clip_duration)}s"
+                    }
+                    if v_out or s_out: clips_data.append(clip_info)
+                    seq_time += clip_duration
 
-                    duration_cmd = f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
-                    total_seconds = float(subprocess.check_output(duration_cmd, shell=True).decode().strip())
-                    
-                    w_cmd = f'ffprobe -v error -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
-                    video_width = int(subprocess.check_output(w_cmd, shell=True).decode().strip().split())
-                    
-                    h_cmd = f'ffprobe -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 "{video_file}"'
-                    video_height = int(subprocess.check_output(h_cmd, shell=True).decode().strip().split())
-                    
-                    clips_data = []
-                    # 🔥 MOBILE RE-FRAME FIX 2: Dynamic padding strategy allocated to loops to enforce multiple splits extraction without early array crash
-                    seq_time = 5.0
-                    for idx in range(int(count_input)):
-                        if (seq_time + clip_duration) > total_seconds: break
-                        f_name = f"Cloud_Short_{idx+1}"
-                        
-                        v_out, s_out = generate_cloud_assets_ultimate_v2(video_file, int(seq_time), clip_duration, video_width, video_height, f_name, idx+1, format_size)
-                        
-                        viral_score = random.randint(84, 99)
-                        badge = "🔥 VIRAL MOMENT" if viral_score > 91 else "🚀 TRENDING POTENTIAL"
-                        
-                        clip_info = {
-                            "id": idx + 1,
-                            "v_path": v_out,
-                            "s_path": s_out,
-                            "score": viral_score,
-                            "badge": badge,
-                            "timings": f"{int(seq_time)}s - {int(seq_time + clip_duration)}s"
-                        }
-                        clips_data.append(clip_info)
-                        seq_time += clip_duration
-
-                    st.session_state.generated_clips = clips_data
-                    st.success("🎉 All clips generated safely! Links are locked below.")
-                except Exception as e:
-                    st.error(f"❌ Execution Interface Bridge Error: {e}")
+                st.session_state.generated_clips = clips_data
+                st.success("🎉 Processing complete! Saari clips download ke liye ready hain.")
+            except Exception as e:
+                st.error(f"❌ Cloud Execution Interface Error: {e}")
 
 if st.session_state.generated_clips:
     st.markdown("---")
